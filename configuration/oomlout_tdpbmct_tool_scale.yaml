@@ -1,0 +1,33 @@
+- digit_start_coordinates:
+  - - 606
+    - 130
+  - - 506
+    - 130
+  - - 406
+    - 130
+  - - 306
+    - 130
+  - - 206
+    - 130
+  - - 106
+    - 130
+  - - 6
+    - 130
+  display_style: seven_segment
+  name: tool_scale_76_mm_width_114_mm_height_20_mm_depth_1000_gram_capacity_aliexpress_jewelry_scale
+  number_of_digits: 5
+  segment_test_coordinates:
+  - - 43
+    - 14
+  - - 72
+    - 44
+  - - 64
+    - 115
+  - - 43
+    - 149
+  - - 10
+    - 115
+  - - 18
+    - 44
+  - - 43
+    - 83

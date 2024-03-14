@@ -1,6 +1,0 @@
-project_id: oomlout_tdpbmct_tool_scale
-project_name: Oomlout Tdpbmct Tool Scale
-project_repo: https://github.com/oomlout/oomlout_tdpbmct_tool_scale
-production_format:
-  oolc_1:
-    file_location: source_files/oolc_1.cdr
