@@ -29,27 +29,52 @@ def main(**kwargs):
 
     create_configuration_overlay_image(scale_configuration)
 
-    #from image
-    #value = get_reading_from_file(scale_configuration)
+    
+    run_test(scale_configuration)
 
+    #while False:
     while True:
         #from camera
         value = get_reading_from_camera(scale_configuration)
         print(f"value: {value}")
-        time.sleep(1)
+        #time.sleep(1)
 
+
+def run_test(scale_configuration):
+    #from image
+    image_names = []
+    image_names.append(f"test_images/test_image_scale_196_1_g.jpg")
+    image_names.append(f"test_images/test_image_scale_225_0_g.jpg")
+    image_names.append(f"test_images/test_image_scale_227_4_g.jpg")
+
+    for image_name in image_names:
+        print(f"image_name: {image_name}")
+        value = get_reading_from_file(scale_configuration, image_name=image_name)
+        print(f"value: {value} g")
 
 
     
-def create_configuration_overlay_image(scale_configuration):
-    image_test = "test_images/test_raw.jpg"
+def create_configuration_overlay_image(scale_configuration, image=None, save_image=True):
+    
+    
 
     #import a library to plot points onto an image
+
     import cv2
     import numpy as np
 
     #read the image
-    img = cv2.imread(image_test)
+    #test if image is an cv2 image
+    if image is not None:    
+        img = image
+    else:
+        image_test = "test_images/test.jpg"
+        img = cv2.imread(image_test)
+
+    #if image isn't colour make a colour version with it as the base
+    if len(img.shape) == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
 
     #plot the segment test coordinates one by one on the image
     colors = [(255,0,0),(0,255,0),(0,0,255),(255,255,0),(0,255,255),(255,0,255),(255,255,255)]
@@ -71,14 +96,11 @@ def create_configuration_overlay_image(scale_configuration):
             cv2.circle(img, (xx,yy), 5, color, -1)
 
     #save the image
-    image_overlay = "test_images/test_overlay.jpg"
+    image_overlay = "test_images/test_create_configuration_overlay_image.jpg"
     print(f"saving to {image_overlay}")
     cv2.imwrite(image_overlay, img)
 
-
-
-
-    
+    return img
 
 
 
@@ -112,15 +134,15 @@ def create_scale_configuration():
     scale_configuration["segment_test_coordinates"] = []
     x_left_top = 18
     x_left_bottom = 10
-    x_middle = 43
+    x_middle = 40
     x_right_top = 72
     x_right_bottom = 64
     
-    y_top = 14
+    y_top = 12
     y_top_middle = 44
-    y_middle = 83
+    y_middle = 81
     y_bottom_middle = 115
-    y_bottom = 149
+    y_bottom = 145
     
     scale_configuration["segment_test_coordinates"].append([x_middle,y_top])
     scale_configuration["segment_test_coordinates"].append([x_right_top,y_top_middle])
@@ -138,8 +160,7 @@ def create_scale_configuration():
         documents = yaml.dump(scale_configurations, file)
 
 
-def get_reading_from_file(scale_configuration):
-    image_name = "test_images/test.jpg"
+def get_reading_from_file(scale_configuration, image_name="test_images/test.jpg"):    
     #read the image
     img = cv2.imread(image_name)
 
@@ -157,17 +178,21 @@ def get_reading_from_camera(scale_configuration):
 
     image = frame
 
+    
+
     #save image as test_images/test_raw.jpg
-    image_name = "test_images/test_raw.jpg"
-    print(f"saving to {image_name}")
-    cv2.imwrite(image_name, image)
+    #image_name = "test_images/test_raw.jpg"
+    #print(f"saving to {image_name}")
+    #cv2.imwrite(image_name, image)
     
 
     return get_reading_from_image(image, scale_configuration)
 
-def get_reading_from_image(image, scale_configuration):
-    #read the image
-    
+#def get_reading_from_image(image, scale_configuration, save_image=True):
+def get_reading_from_image(image, scale_configuration, save_image=False):    
+    image = process_image(image, scale_configuration)   
+
+
     segments = []
     for i in range(scale_configuration["number_of_digits"]):
         segment = []
@@ -181,31 +206,29 @@ def get_reading_from_image(image, scale_configuration):
                 for y in range(-1,2):
                     pixel_value = image[segment_y+y, segment_x+x]
                     #reds int value
-                    red_int = int(pixel_value[2])
-                    green_int = int(pixel_value[1])
-                    blue_int = int(pixel_value[0])
-                    #brightness_pixel = (red_int + green_int + blue_int) / 3
-                    brightness_pixel = green_int
+                    value = int(pixel_value)
+                    brightness_pixel = value
                     brightness_total += brightness_pixel/9
-            threshold = 240
+            threshold = 127
             if brightness_total > threshold:
                 segment.append(1)
             else:
                 segment.append(0)        
         segment_original = copy.deepcopy(segment)
-        segment = 0
+        segment = None
         #segment.append(brightness_total)
         segment_test = []
         segment_test.append([0,0,0,0,0,0,1]) #0
         segment_test.append([1,0,0,1,1,1,1]) #1
-        segment_test.append([0,0,1,0,1,0,0]) #2
+        segment_test.append([0,0,1,0,0,1,0]) #2
         segment_test.append([0,0,0,0,1,1,0]) #3
         segment_test.append([1,0,0,1,1,0,0]) #4
         segment_test.append([0,1,0,0,1,0,0]) #5
         segment_test.append([0,1,0,0,0,0,0]) #6
-        segment_test.append([0,0,0,0,1,1,1]) #7
+        segment_test.append([0,0,0,1,1,1,1]) #7
         segment_test.append([0,0,0,0,0,0,0]) #8
         segment_test.append([0,0,0,0,1,0,0]) #9
+        segment_test.append([1,1,1,1,1,1,1]) # blank
         
         
         
@@ -221,12 +244,71 @@ def get_reading_from_image(image, scale_configuration):
             
             
         segments.append(segment)
-    reading = 0
-    for i in range(len(segments)-1,-1,-1):
-        reading = reading * 10 + segments[i]
-        
-    reading = reading/10
+    try:
+        reading = 0
+        for i in range(len(segments)-1,-1,-1):
+            if segments[i] == 10:
+                segments[i] = 0
+            reading = reading * 10 + segments[i]
+            
+        reading = reading/10
+    except:
+        reading = "error"
+    if reading == 8888.8:
+        reading = "error turned off"
+
+
+    if save_image:
+        #add calibration dots
+        image = create_configuration_overlay_image(scale_configuration, image, save_image=False)
+        #add reading to middle right 
+        text_size = 5
+        text_thickness = 10
+        #choose a bold font
+        font = cv2.FONT_HERSHEY_SIMPLEX
+
+        text = f"{reading} g"
+        text_location = (200, 500)
+        text_color = (0, 0, 255)
+        cv2.putText(image, text, text_location, font, text_size, text_color, text_thickness, cv2.LINE_AA)
+
+        #save image as test_images/test_raw.jpg
+        image_name = "test_images/test_get_reading_from_image.jpg"
+        print(f"saving to {image_name}")
+        cv2.imwrite(image_name, image)
+
+
     return reading
+
+#def process_image(image, scale_configuration, save_image=True, save_configuration=True):
+def process_image(image, scale_configuration, save_image=False, save_configuration=False):
+    pass
+
+    #increase contrast
+    alpha = 1.5
+    beta = 0
+    image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+
+    #convert to black and white with adjustable threshold
+    threshold = 225
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    ret, image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY)
+
+
+
+
+
+
+    if save_image:
+        #save image as test_images/test_raw.jpg
+        image_name = "test_images/test_process_image.jpg"
+        print(f"saving to {image_name}")
+        cv2.imwrite(image_name, image)
+
+    if save_configuration:
+        create_configuration_overlay_image(scale_configuration, image)
+
+    return image
 
 if __name__ == '__main__':
     kwargs = {}
